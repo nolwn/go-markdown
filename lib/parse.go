@@ -42,7 +42,7 @@ func (e *element) setHeading() (err error) {
 		return
 	}
 
-	e.tag = fmt.Sprintf("h%d", level)
+	e.tag = fmt.Sprintf("h%d", level+1)
 	return
 }
 
@@ -58,7 +58,7 @@ func (s *elementStack) pop() (e element) {
 	if len(s.arr) > 0 {
 		l := len(s.arr)
 		e = s.arr[l-1]
-		s.arr = s.arr[0 : l-2]
+		s.arr = s.arr[0 : l-1]
 	}
 
 	return
@@ -73,8 +73,13 @@ func (s *elementStack) peek() (e element) {
 	return
 }
 
-func encloseText(tag string, markdown string) (tagged string) {
-	tagged = fmt.Sprintf("<%s>%s</%s>", tag, markdown, tag)
+func (s *elementStack) isEmpty() (e bool) {
+	e = len(s.arr) == 0
+	return
+}
+
+func (s *elementStack) getArray() (elems []element) {
+	elems = s.arr
 	return
 }
 
@@ -95,25 +100,56 @@ func Markdown(markdown string) (html string) {
 
 			case " ":
 				elems.push(elem)
+				elem = element{}
 
 			case "\n":
-				elems.push(element{isClosing: true})
+				lastElem := elems.peek()
+				var openingTag string
+				var openingKind string
+
+				if lastElem.kind == "text" {
+					openingTag = lastElem.parent
+				} else {
+					openingTag = lastElem.tag
+					openingKind = lastElem.kind
+				}
+
+				elems.push(element{isClosing: true, kind: openingKind, tag: openingTag})
 
 				elem = element{}
 
 			default:
-				elems.push(elem)
-				elem = element{}
 				elem.kind = "text"
 				elem.parent = elems.peek().tag
 				elem.text += s.TokenText()
 			}
 		} else {
+			if s.TokenText() == "\n" || tok == scanner.EOF {
+				lastElem := elems.peek()
+				openingKind := lastElem.kind
+				openingTag := lastElem.tag
+
+				elems.push(elem)
+				elems.push(element{isClosing: true, tag: openingTag, kind: openingKind})
+
+				elem = element{}
+			}
+
 			elem.text += s.TokenText()
 
 		}
 	}
 
-	html += encloseText(elem.tag, elem.text)
+	for _, elem := range elems.getArray() {
+		if elem.kind == "text" {
+			html += elem.text
+		} else if elem.isClosing {
+			html += fmt.Sprintf("</%s>", elem.tag)
+
+		} else {
+			html += fmt.Sprintf("<%s>", elem.tag)
+		}
+	}
+
 	return
 }
