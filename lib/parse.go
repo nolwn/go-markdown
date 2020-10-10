@@ -46,43 +46,6 @@ func (e *element) setHeading() (err error) {
 	return
 }
 
-type elementStack struct {
-	arr []element
-}
-
-func (s *elementStack) push(e element) {
-	s.arr = append(s.arr, e)
-}
-
-func (s *elementStack) pop() (e element) {
-	if len(s.arr) > 0 {
-		l := len(s.arr)
-		e = s.arr[l-1]
-		s.arr = s.arr[0 : l-1]
-	}
-
-	return
-}
-
-func (s *elementStack) peek() (e element) {
-	if len(s.arr) > 0 {
-		l := len(s.arr)
-		e = s.arr[l-1]
-	}
-
-	return
-}
-
-func (s *elementStack) isEmpty() (e bool) {
-	e = len(s.arr) == 0
-	return
-}
-
-func (s *elementStack) getArray() (elems []element) {
-	elems = s.arr
-	return
-}
-
 // Markdown takes a markdown file and returns HTML
 func Markdown(markdown string) (html string) {
 	elems := elementStack{}
