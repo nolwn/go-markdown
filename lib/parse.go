@@ -66,36 +66,44 @@ func Markdown(markdown string) (html string) {
 				elem = element{}
 
 			case "\n":
-				lastElem := elems.peek()
+				ok, lastElem := elems.peek()
 				var openingTag string
 				var openingKind string
 
-				if lastElem.kind == "text" {
-					openingTag = lastElem.parent
-				} else {
-					openingTag = lastElem.tag
-					openingKind = lastElem.kind
+				if ok {
+					if lastElem.kind == "text" {
+						openingTag = lastElem.parent
+					} else {
+						openingTag = lastElem.tag
+						openingKind = lastElem.kind
+					}
+
+					elems.push(element{isClosing: true, kind: openingKind, tag: openingTag})
+					elem = element{}
 				}
 
-				elems.push(element{isClosing: true, kind: openingKind, tag: openingTag})
-
-				elem = element{}
-
 			default:
+				ok, peek := elems.peek()
 				elem.kind = "text"
-				elem.parent = elems.peek().tag
-				elem.text += s.TokenText()
+
+				if ok {
+					elem.parent = peek.tag
+					elem.text += s.TokenText()
+				}
 			}
 		} else {
 			if s.TokenText() == "\n" || tok == scanner.EOF {
-				lastElem := elems.peek()
+				ok, lastElem := elems.peek()
 				openingKind := lastElem.kind
 				openingTag := lastElem.tag
 
-				elems.push(elem)
-				elems.push(element{isClosing: true, tag: openingTag, kind: openingKind})
+				if ok {
+					elems.push(elem)
+					elems.push(element{isClosing: true, tag: openingTag, kind: openingKind})
 
-				elem = element{}
+					elem = element{}
+				}
+
 			}
 
 			elem.text += s.TokenText()
